@@ -1,29 +1,25 @@
-import 'dotenv/config.js'; // Make sure .env variables are loaded
+import 'dotenv/config.js'; 
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import db from './src/db.js'; // Import your database pool from src/db.js
+import db from './src/db.js'; 
 
-// Define __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const JOBS_FILE_PATH = join(__dirname, 'jobs.json');
 
-/**
- * Reads jobs from jobs.json and inserts them into the 'jobs' table.
- */
+
 async function seedDatabase() {
   console.log('Starting to seed database...');
 
-  // 1. Check if jobs.json exists
   if (!existsSync(JOBS_FILE_PATH)) {
     console.error(`\nERROR: jobs.json not found.`);
     console.error(`Please run "node fetchJobs.js" first to create the file.\n`);
     return;
   }
 
-  // 2. Read and parse the jobs.json file
+
   let jobs;
   try {
     const jobsData = readFileSync(JOBS_FILE_PATH, 'utf8');
@@ -40,7 +36,6 @@ async function seedDatabase() {
 
   console.log(`Found ${jobs.length} jobs in jobs.json. Connecting to database...`);
 
-  // 3. Connect to the database
   let client;
   try {
     client = await db.connect();
@@ -52,17 +47,14 @@ async function seedDatabase() {
   }
   
   try {
-    // 4. Clear existing jobs to prevent duplicates
-    // TRUNCATE is fast and also resets the SERIAL ID counter.
+    
     await client.query('TRUNCATE TABLE jobs RESTART IDENTITY');
     console.log('Cleared existing "jobs" table.');
 
-    // 5. Insert each job into the database
     let count = 0;
     for (const job of jobs) {
       const { title, company, location, description, url } = job;
       
-      // Basic validation: Skip jobs with missing essential data
       if (!title || !company || !description) {
           console.warn('Skipping job with missing data:', title, company);
           continue;
@@ -72,11 +64,10 @@ async function seedDatabase() {
         INSERT INTO jobs (title, company, location, description, url)
         VALUES ($1, $2, $3, $4, $5)
       `;
-      // Use the client to send the query
       await client.query(query, [
         title, 
         company, 
-        location || 'Not specified', // Provide a default if location is null
+        location || 'Not specified',
         description, 
         url
       ]);
@@ -88,18 +79,14 @@ async function seedDatabase() {
   } catch (err) {
     console.error('Error during database seeding process:', err.stack);
   } finally {
-    // 6. Release the client back to the pool
     if (client) {
       client.release();
       console.log('Database client released.');
     }
   }
 }
-
-// Run the seed function and then exit the process
 seedDatabase().then(() => {
     console.log('Seed process finished.');
-    // Explicitly end the pool to allow the script to exit
     db.end(); 
 }).catch(err => {
     console.error('Unhandled error in seedDatabase:', err);

@@ -1,16 +1,15 @@
 import 'dotenv/config.js'; 
 import db from '../db.js';
 
-// --- PDF LOADER (using pdf.js-dist) ---
-// This is the implementation from the YouTube video
+
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { unlinkSync, readFileSync } from 'fs';
 import { extname } from 'path';
-// --- END LOADER ---
+
 
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
-// --- Gemini AI Setup ---
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
   console.error("FATAL ERROR: GEMINI_API_KEY is not defined in .env file.");
@@ -52,11 +51,7 @@ const model = genAI.getGenerativeModel({
   safetySettings
 });
 
-/**
- * Extracts text from a PDF file using pdf.js-dist
- * @param {string} filePath - The path to the temporary PDF file
- * @returns {string} The extracted text
- */
+
 async function extractTextFromPDF(filePath) {
   const data = new Uint8Array(readFileSync(filePath));
   const doc = await getDocument({ data }).promise;
@@ -126,15 +121,12 @@ export async function analyzeResume(req, res) {
     if (fileExtension !== '.pdf') {
       return res.status(400).json({ error: 'Unsupported file type. Please upload a PDF file.' });
     }
-
-    // Use the new pdf.js-dist function
     resumeText = await extractTextFromPDF(filePath);
 
   } catch (parseError) {
     console.error("Error parsing PDF:", parseError);
     return res.status(500).json({ error: 'Failed to read the resume file.' });
   } finally {
-    // We must delete the temp file *after* loading it
     try {
       unlinkSync(filePath);
     } catch (e) {
