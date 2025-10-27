@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 
 const RAPIDAPI_KEY = 'a03639ee5bmsh3fd44e48c3c7289p1421ddjsn1887a2447104'; 
 
-const SEARCH_QUERY = 'Full Stack Developer in USA';
+const SEARCH_QUERY = 'Full Stack Developer in India';
 const PAGE_NUMBER = '1';
 const OUTPUT_FILE = join(__dirname, 'jobs.json'); 
 
@@ -22,7 +22,7 @@ const options = {
     query: SEARCH_QUERY,
     page: PAGE_NUMBER,
     num_pages: '1',
-    job_requirements: 'under_3_years_experience' 
+    job_requirements: 'new graduate with 0+ years experience' 
   },
   headers: {
     'X-RapidAPI-Key': RAPIDAPI_KEY,
