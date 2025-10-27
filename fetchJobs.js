@@ -4,7 +4,7 @@ import path, { join } from 'path';
 
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename); // Now 'path' is defined
+const __dirname = path.dirname(__filename); 
 
 
 const RAPIDAPI_KEY = 'a03639ee5bmsh3fd44e48c3c7289p1421ddjsn1887a2447104'; 
