@@ -1,22 +1,18 @@
 import axios from 'axios';
 import { writeFileSync } from 'fs';
-// --- FIX: Import the 'path' module ---
 import path, { join } from 'path';
-// --- END FIX ---
 
-// Necessary for __dirname in ES Modules
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename); // Now 'path' is defined
 
-// --- CONFIGURATION ---
-// PASTE YOUR RAPIDAPI KEY HERE (Get from RapidAPI.com, search for "JSearch")
-const RAPIDAPI_KEY = 'a03639ee5bmsh3fd44e48c3c7289p1421ddjsn1887a2447104'; // Replace if needed
 
-const SEARCH_QUERY = 'Software Developer in India'; // Changed to India as requested earlier
+const RAPIDAPI_KEY = 'a03639ee5bmsh3fd44e48c3c7289p1421ddjsn1887a2447104'; 
+
+const SEARCH_QUERY = 'Software Developer in India'; 
 const PAGE_NUMBER = '1';
-const OUTPUT_FILE = join(__dirname, 'jobs.json'); // Now 'join' is defined via the import above
-// --- END CONFIGURATION ---
+const OUTPUT_FILE = join(__dirname, 'jobs.json'); 
+
 
 const options = {
   method: 'GET',
@@ -25,7 +21,6 @@ const options = {
     query: SEARCH_QUERY,
     page: PAGE_NUMBER,
     num_pages: '1',
-    // job_requirements: 'under_3_years_experience' // REMOVED - Caused 400 error
   },
   headers: {
     'X-RapidAPI-Key': RAPIDAPI_KEY,
@@ -42,7 +37,7 @@ async function fetchAndSaveJobs() {
   console.log(`Attempting to fetch jobs for query: "${SEARCH_QUERY}"...`);
 
   try {
-    const response = await axios.request(options); // Use axios.request
+    const response = await axios.request(options); 
     const jobs = response.data.data;
 
     if (!jobs || jobs.length === 0) {
@@ -67,7 +62,7 @@ async function fetchAndSaveJobs() {
 
     console.log(`\nSUCCESS: Saved ${formattedJobs.length} jobs to ${OUTPUT_FILE}`);
     console.log('You are now ready to run the seed script:');
-    console.log('node seedDb.js'); // Updated command for consistency
+    console.log('node seedDb.js');
 
   } catch (error) {
     console.error('Error fetching jobs from RapidAPI:');
