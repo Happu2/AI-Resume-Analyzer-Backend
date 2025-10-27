@@ -147,7 +147,7 @@ export async function analyzeResume(req, res) {
   }
   
   const matchedJobs = [];
-  const analysisPromises = jobs.slice(0, 5).map(job => 
+  const analysisPromises = jobs.slice(0, 10).map(job => 
     getAiAnalysis( resumeText, job.title + ' ' + job.description)
       .then(aiData => {
         if (aiData) {
