@@ -13,7 +13,7 @@
       process.exit(1); 
     }
     const sslConfig = connectionString.includes('render.com') || connectionString.includes('ssl=true')
-      ? { ssl: { rejectUnauthorized: false } } // Use SSL, allow self-signed certs (common on cloud DBs)
+      ? { ssl: { rejectUnauthorized: false } } 
       : {}; 
 
     const pool = new Pool({
