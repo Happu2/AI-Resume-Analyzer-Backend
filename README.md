@@ -139,10 +139,6 @@ The application is deployed and accessible at:
 
 ---
 
-## 📝 License
 
-This project is created as a submission for the Orbit AI Product Enhancement Challenge.
-
----
 
 
