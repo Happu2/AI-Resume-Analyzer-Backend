@@ -5,9 +5,6 @@
 
 ---
 
-## 🏆 Challenge Submission
-
-This project is a submission for the **Orbit AI - Product Enhancement Challenge (October 2025)**.
 
 ---
 
