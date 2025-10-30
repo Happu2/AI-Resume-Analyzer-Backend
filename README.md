@@ -145,6 +145,4 @@ This project is created as a submission for the Orbit AI Product Enhancement Cha
 
 ---
 
-## 👤 Author
 
-Created for the Orbit AI - Product Enhancement Challenge (October 2025)
