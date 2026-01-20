@@ -1,14 +1,9 @@
-import 'dotenv/config.js'; 
+import 'dotenv/config.js';
 import db from '../db.js';
-
-
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { unlinkSync, readFileSync } from 'fs';
 import { extname } from 'path';
-
-
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -17,15 +12,33 @@ if (!GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
+// 1. Define Safety Settings
+const safetySettings = [
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  },
+];
+
 const generationConfig = {
-    temperature: 0.2,
-    topK: 1,
-    topP: 1,
-    maxOutputTokens: 2048,
-    responseMimeType: "application/json"
+  temperature: 0.2,
+  topK: 1,
+  topP: 1,
+  maxOutputTokens: 2048,
+  responseMimeType: "application/json"
 };
-
-
 
 // Use a currently supported model name
 const model = genAI.getGenerativeModel({
@@ -33,7 +46,6 @@ const model = genAI.getGenerativeModel({
   generationConfig,
   safetySettings
 });
-
 
 async function extractTextFromPDF(filePath) {
   const data = new Uint8Array(readFileSync(filePath));
@@ -131,7 +143,7 @@ export async function analyzeResume(req, res) {
   
   const matchedJobs = [];
   const analysisPromises = jobs.slice(0, 10).map(job => 
-    getAiAnalysis( resumeText, job.title + ' ' + job.description)
+    getAiAnalysis(resumeText, job.title + ' ' + job.description)
       .then(aiData => {
         if (aiData) {
           matchedJobs.push({
@@ -182,4 +194,3 @@ export async function getJobById(req, res) {
         res.status(500).json({ error: 'Failed to retrieve job details.' });
     }
 }
-
