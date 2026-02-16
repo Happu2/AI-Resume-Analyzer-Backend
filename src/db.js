@@ -7,11 +7,16 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
+console.log("DATABASE_URL is set:", process.env.DATABASE_URL ? "✓" : "✗");
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
-  } : false
+  } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 export const connectDB = async () => {
