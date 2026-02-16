@@ -7,26 +7,7 @@ import { connectDB } from './src/db.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Allow CORS for your frontend domain
-app.use(cors({
-  origin: ['https://aianalyz.netlify.app'],
-  credentials: true
-}));
-
-app.use(json());
-app.use(urlencoded({ extended: true }));
-app.use('/api', resumeRoutes);
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send({ error: 'Something went wrong on the server!' });
-});
-
-// Health check endpoint for debugging
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
-
-// Fallback: set CORS headers for all responses (defensive, for edge cases)
+// Fallback: set CORS headers for all responses (must be first)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', 'https://aianalyz.netlify.app');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -36,6 +17,26 @@ app.use((req, res, next) => {
     return res.sendStatus(200);
   }
   next();
+});
+
+// Optionally, you can remove the cors() middleware below, or keep it for redundancy
+// app.use(cors({
+//   origin: ['https://aianalyz.netlify.app'],
+//   credentials: true
+// }));
+
+app.use(json());
+app.use(urlencoded({ extended: true }));
+app.use('/api', resumeRoutes);
+
+// Health check endpoint for debugging
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send({ error: 'Something went wrong on the server!' });
 });
 
 // Initialize database and start server
