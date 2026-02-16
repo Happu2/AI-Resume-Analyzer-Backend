@@ -11,8 +11,16 @@ const PORT = process.env.PORT || 10000;
 // Configure Multer for file uploads (storing in /tmp for serverless environments like Render)
 const upload = multer({ dest: '/tmp/' });
 
-// Middleware
-app.use(cors());
+/**
+ * Middleware
+ * Updated CORS configuration to specifically allow your Netlify domain.
+ * This resolves the "No 'Access-Control-Allow-Origin' header" error.
+ */
+app.use(cors({
+  origin: ['https://aianalyz.netlify.app', 'http://localhost:5173'], // Allow production and local dev
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 app.use(express.json());
 
 /**
@@ -37,10 +45,11 @@ app.get('/health', async (req, res) => {
 
 /**
  * Routes
+ * Note: Updated route path to /api/resume/analyze to match your frontend's request
  */
 
 // 1. Analyze Resume against Jobs (Main Feature)
-app.post('/api/analyze', upload.single('resume'), analyzeResume);
+app.post('/api/resume/analyze', upload.single('resume'), analyzeResume);
 
 // 2. Fetch all available jobs
 app.get('/api/jobs', getAllJobs);
