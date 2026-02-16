@@ -1,9 +1,10 @@
 import 'dotenv/config.js';
-const { sequelize, connectDB } = require('../db.js');
+import { sequelize, connectDB } from '../db.js';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { unlinkSync, readFileSync } from 'fs';
 import { extname } from 'path';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import db from '../db.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) {
@@ -131,8 +132,8 @@ export async function analyzeResume(req, res) {
 
   let jobs;
   try {
-    const { rows } = await db.query('SELECT * FROM jobs');
-    jobs = rows;
+    const result = await db.query('SELECT * FROM jobs');
+    jobs = result.rows;
     if (jobs.length === 0) {
       return res.status(500).json({ error: "No jobs found in database to compare against." });
     }
@@ -172,8 +173,8 @@ export async function analyzeResume(req, res) {
 
 export async function getAllJobs(req, res) {
     try {
-        const { rows } = await db.query('SELECT id, title, company, location FROM jobs');
-        res.status(200).json(rows);
+        const result = await db.query('SELECT id, title, company, location FROM jobs');
+        res.status(200).json(result.rows);
     } catch (err) {
         console.error("Error in getAllJobs:", err.stack);
         res.status(500).json({ error: 'Failed to retrieve jobs.' });
@@ -183,12 +184,12 @@ export async function getAllJobs(req, res) {
 export async function getJobById(req, res) {
     try {
         const { id } = req.params;
-        const { rows } = await db.query('SELECT * FROM jobs WHERE id = $1', [id]);
+        const result = await db.query('SELECT * FROM jobs WHERE id = $1', [id]);
         
-        if (rows.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Job not found.' });
         }
-        res.status(200).json(rows[0]);
+        res.status(200).json(result.rows[0]);
     } catch (err) {
         console.error("Error in getJobById:", err.stack);
         res.status(500).json({ error: 'Failed to retrieve job details.' });
