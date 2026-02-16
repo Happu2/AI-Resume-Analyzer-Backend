@@ -6,7 +6,13 @@ import { connectDB } from './src/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-app.use(cors()); 
+
+// Allow CORS for your frontend domain
+app.use(cors({
+  origin: ['https://aianalyz.netlify.app'],
+  credentials: true
+}));
+
 app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use('/api', resumeRoutes);
