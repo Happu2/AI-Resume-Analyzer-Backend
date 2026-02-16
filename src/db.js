@@ -3,30 +3,32 @@ import 'dotenv/config.js';
 
 const { Pool } = pg;
 
-// Neon requires SSL for connections.
-// The 'rejectUnauthorized: false' is common for hosted DBs to prevent certificate errors
-// unless you provide the specific CA certificate.
+/**
+ * Neon DB Configuration
+ * 1. connectionTimeoutMillis: Prevents the server from hanging indefinitely (and causing 503s)
+ * 2. ssl: Required for Neon. 'rejectUnauthorized: false' allows connecting without providing the CA file.
+ */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  connectionTimeoutMillis: 5000, // 5 second timeout
+  idleTimeoutMillis: 30000,
+  max: 10,
   ssl: {
     rejectUnauthorized: false,
   },
 });
 
-// Testing the connection
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('Error acquiring client for Neon DB:', err.stack);
-  }
-  client.query('SELECT NOW()', (err, result) => {
-    release();
-    if (err) {
-      return console.error('Error executing query:', err.stack);
-    }
-    console.log('Connected to Neon DB successfully at:', result.rows[0].now);
-  });
+// Error listener for the pool to prevent process crashes
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle Neon client', err);
 });
 
 export default {
-  query: (text, params) => pool.query(text, params),
+  /**
+   * Executing a query
+   * We wrap this in a way that doesn't block the server if the DB is slow.
+   */
+  query: (text, params) => {
+    return pool.query(text, params);
+  },
 };
