@@ -31,4 +31,6 @@ export default {
   query: (text, params) => {
     return pool.query(text, params);
   },
+  connect: () => pool.connect(),
+  end: () => pool.end(),
 };
