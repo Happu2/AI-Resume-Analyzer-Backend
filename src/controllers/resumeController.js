@@ -1,5 +1,4 @@
 import 'dotenv/config.js';
-import { sequelize, connectDB } from '../db.js';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { unlinkSync, readFileSync } from 'fs';
 import { extname } from 'path';
