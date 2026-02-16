@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import morgan from 'morgan';
 import 'dotenv/config.js';
 import db from './src/db.js'; // Importing the Neon DB connection
 import { analyzeResume, getAllJobs, getJobById } from './src/controllers/resumeController.js';
@@ -13,18 +14,24 @@ const upload = multer({ dest: '/tmp/' });
 
 /**
  * Middleware
- * Updated CORS configuration to specifically allow your Netlify domain.
- * This resolves the "No 'Access-Control-Allow-Origin' header" error.
  */
+
+// 1. Logger: Provides clean console logs for every request (useful for debugging)
+app.use(morgan('dev'));
+
+// 2. CORS: Resolves the "No Access-Control-Allow-Origin" error for your Netlify frontend
 app.use(cors({
   origin: ['https://aianalyz.netlify.app', 'http://localhost:5173'], // Allow production and local dev
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
+
+// 3. Body Parser
 app.use(express.json());
 
 /**
  * Health Check & DB Connectivity Test
+ * Helps verify that Neon DB is reachable from the Render environment.
  */
 app.get('/health', async (req, res) => {
   try {
@@ -45,22 +52,30 @@ app.get('/health', async (req, res) => {
 
 /**
  * Routes
- * Note: Updated route path to /api/resume/analyze to match your frontend's request
+ * These endpoints are configured to match the Axios calls in your React App.
  */
 
-// 1. Analyze Resume against Jobs (Main Feature)
+// POST /api/resume/analyze -> Matches axios.post(`${API_URL}/resume/analyze`, ...)
 app.post('/api/resume/analyze', upload.single('resume'), analyzeResume);
 
-// 2. Fetch all available jobs
+// GET /api/jobs -> Fetch all available jobs for comparison or listing
 app.get('/api/jobs', getAllJobs);
 
-// 3. Fetch a specific job by ID
+// GET /api/jobs/:id -> Fetch details for a specific job
 app.get('/api/jobs/:id', getJobById);
+
+/**
+ * Global Error Handler
+ */
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err.stack);
+  res.status(500).json({ error: 'Something went wrong on the server.' });
+});
 
 /**
  * Start Server
  */
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  console.log('Neon DB connection is being initialized...');
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log('📡 Neon DB connection initialized.');
 });
