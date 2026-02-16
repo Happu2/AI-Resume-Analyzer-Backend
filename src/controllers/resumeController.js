@@ -137,8 +137,8 @@ export async function analyzeResume(req, res) {
       return res.status(500).json({ error: "No jobs found in database to compare against." });
     }
   } catch (dbError) {
-    console.error("Error fetching jobs from DB:", dbError);
-    return res.status(500).json({ error: 'Failed to fetch job list.' });
+    console.error("Error fetching jobs from DB:", dbError.message);
+    return res.status(503).json({ error: 'Database service unavailable. Please try again later.' });
   }
   
   const matchedJobs = [];
@@ -175,8 +175,8 @@ export async function getAllJobs(req, res) {
         const result = await db.query('SELECT id, title, company, location FROM jobs');
         res.status(200).json(result.rows);
     } catch (err) {
-        console.error("Error in getAllJobs:", err.stack);
-        res.status(500).json({ error: 'Failed to retrieve jobs.' });
+        console.error("Error in getAllJobs:", err.message);
+        res.status(503).json({ error: 'Database service unavailable. Please try again later.' });
     }
 }
 
@@ -190,7 +190,7 @@ export async function getJobById(req, res) {
         }
         res.status(200).json(result.rows[0]);
     } catch (err) {
-        console.error("Error in getJobById:", err.stack);
-        res.status(500).json({ error: 'Failed to retrieve job details.' });
+        console.error("Error in getJobById:", err.message);
+        res.status(503).json({ error: 'Database service unavailable. Please try again later.' });
     }
 }
