@@ -1,43 +1,32 @@
+import pg from 'pg';
 import 'dotenv/config.js';
-import pkg from 'pg';
 
-const { Pool } = pkg;
+const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  console.error('FATAL ERROR: DATABASE_URL is not defined.');
-  process.exit(1);
-}
-
+// Neon requires SSL for connections.
+// The 'rejectUnauthorized: false' is common for hosted DBs to prevent certificate errors
+// unless you provide the specific CA certificate.
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected PG error', err);
-});
-
-export const connectDB = async (retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await pool.query('SELECT 1');
-      console.log('PostgreSQL connected');
-      return;
-    } catch (err) {
-      console.error(`DB attempt ${i + 1} failed`, err.message);
-      await new Promise(r => setTimeout(r, 2000));
-    }
+// Testing the connection
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('Error acquiring client for Neon DB:', err.stack);
   }
-  console.warn('Database unavailable, server still running');
-};
+  client.query('SELECT NOW()', (err, result) => {
+    release();
+    if (err) {
+      return console.error('Error executing query:', err.stack);
+    }
+    console.log('Connected to Neon DB successfully at:', result.rows[0].now);
+  });
+});
 
-const db = {
+export default {
   query: (text, params) => pool.query(text, params),
 };
-
-export default db;

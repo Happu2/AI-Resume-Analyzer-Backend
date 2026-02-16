@@ -1,39 +1,57 @@
-import 'dotenv/config.js';
 import express from 'express';
 import cors from 'cors';
-import resumeRoutes from './src/routes/resumeRoutes.js';
-import { connectDB } from './src/db.js';
+import multer from 'multer';
+import 'dotenv/config.js';
+import db from './src/db.js'; // Importing the Neon DB connection
+import { analyzeResume, getAllJobs, getJobById } from './src/controllers/resumeController.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 10000;
 
-app.use(cors({
-  origin: 'https://aianalyz.netlify.app',
-  credentials: true,
-}));
+// Configure Multer for file uploads (storing in /tmp for serverless environments like Render)
+const upload = multer({ dest: '/tmp/' });
 
-app.options('*', cors());
-
+// Middleware
+app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-await connectDB();
-
-app.use('/api', resumeRoutes);
-
-app.get('/health', (req, res) => {
-  res.send('OK');
+/**
+ * Health Check & DB Connectivity Test
+ */
+app.get('/health', async (req, res) => {
+  try {
+    const result = await db.query('SELECT NOW()');
+    res.status(200).json({
+      status: 'UP',
+      database: 'CONNECTED',
+      timestamp: result.rows[0].now
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'DOWN',
+      database: 'ERROR',
+      error: err.message
+    });
+  }
 });
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: 'Server error' });
-});
+/**
+ * Routes
+ */
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection:', reason);
-});
+// 1. Analyze Resume against Jobs (Main Feature)
+app.post('/api/analyze', upload.single('resume'), analyzeResume);
 
+// 2. Fetch all available jobs
+app.get('/api/jobs', getAllJobs);
+
+// 3. Fetch a specific job by ID
+app.get('/api/jobs/:id', getJobById);
+
+/**
+ * Start Server
+ */
 app.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log('Neon DB connection is being initialized...');
 });
