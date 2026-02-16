@@ -9,6 +9,9 @@ import { analyzeResume, getAllJobs, getJobById } from './src/controllers/resumeC
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Render uses a proxy/load balancer, so we trust the first proxy to get the correct IP/protocol
+app.set('trust proxy', 1);
+
 // Configure Multer for file uploads (storing in /tmp for serverless environments like Render)
 const upload = multer({ dest: '/tmp/' });
 
@@ -20,8 +23,9 @@ const upload = multer({ dest: '/tmp/' });
 app.use(morgan('dev'));
 
 // 2. CORS: Resolves the "No Access-Control-Allow-Origin" error for your Netlify frontend
+// This allows your frontend at Netlify to communicate with your Render backend instances.
 app.use(cors({
-  origin: ['https://aianalyz.netlify.app', 'http://localhost:5173'], // Allow production and local dev
+  origin: ['https://aianalyz.netlify.app', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
@@ -31,7 +35,7 @@ app.use(express.json());
 
 /**
  * Health Check & DB Connectivity Test
- * Helps verify that Neon DB is reachable from the Render environment.
+ * Helps verify that Neon DB is reachable from your Render environment (bnoy or c3xk).
  */
 app.get('/health', async (req, res) => {
   try {
@@ -39,6 +43,7 @@ app.get('/health', async (req, res) => {
     res.status(200).json({
       status: 'UP',
       database: 'CONNECTED',
+      instance: process.env.RENDER_SERVICE_ID || 'local',
       timestamp: result.rows[0].now
     });
   } catch (err) {
@@ -75,7 +80,7 @@ app.use((err, req, res, next) => {
 /**
  * Start Server
  */
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
   console.log('📡 Neon DB connection initialized.');
 });
