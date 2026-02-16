@@ -1,6 +1,6 @@
-const { Sequelize } = require("sequelize");
+import { Sequelize } from "sequelize";
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+export const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   logging: false,
   dialectOptions: {
@@ -11,7 +11,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   }
 });
 
-const connectDB = async () => {
+export const connectDB = async () => {
   try {
     await sequelize.authenticate();
     console.log("Neon PostgreSQL connected");
@@ -20,5 +20,3 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-module.exports = { sequelize, connectDB };
