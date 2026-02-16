@@ -1,22 +1,25 @@
-import { Sequelize } from "sequelize";
+import pkg from 'pg';
+const { Pool } = pkg;
 
-export const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: "postgres",
-  logging: false,
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
   }
 });
 
 export const connectDB = async () => {
   try {
-    await sequelize.authenticate();
-    console.log("Neon PostgreSQL connected");
+    await pool.query('SELECT NOW()');
+    console.log("PostgreSQL connected");
   } catch (error) {
-    console.error("Neon DB connection failed:", error);
+    console.error("DB connection failed:", error);
     process.exit(1);
   }
 };
+
+const db = {
+  query: (sql, params) => pool.query(sql, params)
+};
+
+export default db;
