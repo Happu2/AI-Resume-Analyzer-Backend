@@ -9,33 +9,33 @@ import { analyzeResume, getAllJobs, getJobById } from './src/controllers/resumeC
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Render uses a proxy/load balancer, so we trust the first proxy to get the correct IP/protocol
+// Render uses a proxy/load balancer, so we trust the first proxy
 app.set('trust proxy', 1);
 
-// Configure Multer for file uploads (storing in /tmp for serverless environments like Render)
+// Configure Multer for file uploads (storing in /tmp)
 const upload = multer({ dest: '/tmp/' });
 
 /**
  * Middleware
  */
-
-// 1. Logger: Provides clean console logs for every request (useful for debugging)
 app.use(morgan('dev'));
-
-// 2. CORS: Resolves the "No Access-Control-Allow-Origin" error for your Netlify frontend
-// This allows your frontend at Netlify to communicate with your Render backend instances.
 app.use(cors({
   origin: ['https://aianalyz.netlify.app', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
-
-// 3. Body Parser
 app.use(express.json());
 
 /**
+ * Basic Root Route
+ */
+app.get('/', (req, res) => {
+  res.status(200).send('AI Resume Analyzer Backend is Live.');
+});
+
+/**
  * Health Check & DB Connectivity Test
- * Helps verify that Neon DB is reachable from your Render environment (bnoy or c3xk).
+ * Updated to not crash if the database is unavailable
  */
 app.get('/health', async (req, res) => {
   try {
@@ -47,9 +47,11 @@ app.get('/health', async (req, res) => {
       timestamp: result.rows[0].now
     });
   } catch (err) {
-    res.status(500).json({
-      status: 'DOWN',
+    // Return 200 but report DB status as DOWN so Render doesn't kill the process
+    res.status(200).json({
+      status: 'PARTIAL_UP',
       database: 'ERROR',
+      message: 'Server is running but database is unreachable',
       error: err.message
     });
   }
@@ -57,17 +59,9 @@ app.get('/health', async (req, res) => {
 
 /**
  * Routes
- * These endpoints are configured to match the Axios calls in your React App.
  */
-
-// POST /api/resume/analyze -> Matches axios.post(`${API_URL}/resume/analyze`, ...)
-// Note: If your frontend API_URL ends in '/api', this path results in /api/resume/analyze
 app.post('/api/resume/analyze', upload.single('resume'), analyzeResume);
-
-// GET /api/jobs -> Fetch all available jobs for comparison or listing
 app.get('/api/jobs', getAllJobs);
-
-// GET /api/jobs/:id -> Fetch details for a specific job
 app.get('/api/jobs/:id', getJobById);
 
 /**
@@ -82,6 +76,6 @@ app.use((err, req, res, next) => {
  * Start Server
  */
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  console.log('📡 Neon DB connection initialized.');
+  console.log(`🚀 Server is listening on port ${PORT}`);
+  console.log('📡 Service initialized. Check /health for DB status.');
 });
