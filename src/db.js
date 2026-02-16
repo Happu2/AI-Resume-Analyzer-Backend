@@ -1,38 +1,24 @@
-    import 'dotenv/config.js'; 
-    import pg from 'pg'; 
-    const { Pool } = pg;
+const { Sequelize } = require("sequelize");
 
-    const connectionString = process.env.DATABASE_URL;
-
-    if (!connectionString) {
-      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      console.error("ERROR: DATABASE_URL is not set in your .env file.");
-      console.error("Please set it in backend/.env");
-      console.error("Example: DATABASE_URL=\"postgresql://user:pass@host:5432/dbname\"");
-      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      process.exit(1); 
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
     }
-    const sslConfig = connectionString.includes('render.com') || connectionString.includes('ssl=true')
-      ? { ssl: { rejectUnauthorized: false } } 
-      : {}; 
+  }
+});
 
-    const pool = new Pool({
-      connectionString: connectionString,
-      ...sslConfig 
-    });
+const connectDB = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("Neon PostgreSQL connected");
+  } catch (error) {
+    console.error("Neon DB connection failed:", error);
+    process.exit(1);
+  }
+};
 
-    pool.connect((err, client, release) => {
-      if (err) {
-        console.error('Error acquiring client for DB connection test:', err.stack);
-      } else if (client) {
-        console.log('Database connection successful (test connection).');
-        client.release();
-      } else {
-        console.error('Failed to acquire client for DB connection test, but no error thrown.');
-      }
-    });
-    export default pool;
-
-
-    
-
+module.exports = { sequelize, connectDB };
