@@ -31,6 +31,13 @@ export default {
   query: (text, params) => {
     return pool.query(text, params);
   },
+  /**
+   * Manually acquire a client from the pool.
+   */
   connect: () => pool.connect(),
+  /**
+   * Shuts down the connection pool.
+   * Essential for CLI scripts like seedDb.js to allow the process to exit.
+   */
   end: () => pool.end(),
 };
