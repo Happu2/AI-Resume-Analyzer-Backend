@@ -1,93 +1,109 @@
 import 'dotenv/config.js';
-import { existsSync, readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import db from './src/db.js';
+import db from '../db.js'; // Correct relative path from controllers/ to src/
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { unlinkSync, readFileSync } from 'fs';
+import { extname } from 'path';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const JOBS_FILE_PATH = join(__dirname, 'jobs.json');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error("FATAL ERROR: GEMINI_API_KEY is not defined in .env file.");
+}
 
-/**
- * seedDatabase
- * Reads the jobs.json file and populates the Neon "jobs" table.
- * Ensure you have run "node fetchJobs.js" first.
- */
-async function seedDatabase() {
-  console.log('🚀 Starting to seed database...');
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-  // 1. Check if source file exists
-  if (!existsSync(JOBS_FILE_PATH)) {
-    console.error(`\n❌ ERROR: jobs.json not found.`);
-    console.error(`Please run "node fetchJobs.js" first to create the file.\n`);
-    return;
+const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+];
+
+const generationConfig = {
+  temperature: 0.2,
+  topK: 1,
+  topP: 1,
+  maxOutputTokens: 2048,
+  responseMimeType: "application/json"
+};
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.5-flash-preview-09-2025",
+  generationConfig,
+  safetySettings
+});
+
+async function extractTextFromPDF(filePath) {
+  const data = new Uint8Array(readFileSync(filePath));
+  const doc = await getDocument({ data }).promise;
+  let text = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
   }
+  return text;
+}
 
-  // 2. Parse JSON data
-  let jobs;
+async function getAiAnalysis(resumeText, jobDescription) {
+  const prompt = `
+    You are an expert AI recruiting assistant. Analyze the resume and job description.
+    Response must be ONLY JSON.
+    Schema: { "fitScore": number, "reasoning": string, "recommendations": string[] }
+    ---RESUME---
+    ${resumeText.substring(0, 4000)}
+    ---JOB DESCRIPTION---
+    ${jobDescription.substring(0, 4000)}
+  `;
   try {
-    const jobsData = readFileSync(JOBS_FILE_PATH, 'utf8');
-    jobs = JSON.parse(jobsData);
-  } catch (err) {
-    console.error('❌ Error reading or parsing jobs.json:', err);
-    return;
-  }
-
-  if (jobs.length === 0) {
-    console.log('⚠️ jobs.json is empty. No jobs to seed. Exiting.');
-    return;
-  }
-
-  console.log(`🔍 Found ${jobs.length} jobs in jobs.json. Preparing data...`);
-
-  try {
-    // 3. Clear existing table to avoid duplicates
-    // Restart Identity resets the SERIAL id counter to 1
-    await db.query('TRUNCATE TABLE jobs RESTART IDENTITY');
-    console.log('✅ Cleared existing "jobs" table.');
-
-    let count = 0;
-    for (const job of jobs) {
-      const { title, company, location, description, url } = job;
-
-      // Safety check for required NOT NULL fields
-      if (!title || !company) {
-          console.warn('⚠️ Skipping job with missing required fields:', title || 'No Title');
-          continue;
-      }
-
-      const query = `
-        INSERT INTO jobs (title, company, location, description, url)
-        VALUES ($1, $2, $3, $4, $5)
-      `;
-
-      await db.query(query, [
-        title,
-        company,
-        location || 'Remote',
-        description || 'No description provided.',
-        url || '#'
-      ]);
-      count++;
-    }
-
-    console.log(`\n🎉 SUCCESS: Database has been seeded with ${count} jobs.`);
-
-  } catch (err) {
-    console.error('❌ Error during database seeding process:', err.message);
-    if (err.stack.includes('relation "jobs" does not exist')) {
-        console.error('💡 TIP: You need to create the "jobs" table in your Neon SQL console first.');
-    }
+    const result = await model.generateContent(prompt);
+    return JSON.parse(result.response.text());
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    return null;
   }
 }
 
-// Execute the process
-seedDatabase()
-  .then(() => {
-    console.log('🏁 Seed process finished.');
-    process.exit(0);
-  })
-  .catch(err => {
-    console.error('❌ Unhandled error:', err);
-    process.exit(1);
-  });
+export async function analyzeResume(req, res) {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  const filePath = req.file.path;
+  try {
+    if (extname(req.file.originalname).toLowerCase() !== '.pdf') {
+      return res.status(400).json({ error: 'Please upload a PDF.' });
+    }
+    const resumeText = await extractTextFromPDF(filePath);
+    const { rows: jobs } = await db.query('SELECT * FROM jobs');
+
+    if (jobs.length === 0) return res.status(500).json({ error: "No jobs in database." });
+
+    const analysisPromises = jobs.slice(0, 10).map(job =>
+      getAiAnalysis(resumeText, job.title + ' ' + job.description)
+        .then(aiData => aiData ? { ...job, ...aiData } : null)
+    );
+
+    const matchedJobs = (await Promise.all(analysisPromises))
+      .filter(job => job !== null)
+      .sort((a, b) => b.fitScore - a.fitScore);
+
+    res.status(200).json({ matchedJobs });
+  } catch (error) {
+    console.error("Analysis Error:", error);
+    res.status(500).json({ error: 'Analysis failed.' });
+  } finally {
+    try { unlinkSync(filePath); } catch (e) {}
+  }
+}
+
+export const getAllJobs = async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT id, title, company, location FROM jobs');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: 'Failed to fetch jobs.' }); }
+};
+
+export const getJobById = async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
+    rows.length ? res.json(rows[0]) : res.status(404).json({ error: 'Not found' });
+  } catch (err) { res.status(500).json({ error: 'Failed to fetch job.' }); }
+};
