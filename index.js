@@ -30,6 +30,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server error' });
 });
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
 });
