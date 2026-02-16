@@ -61,6 +61,7 @@ app.get('/health', async (req, res) => {
  */
 
 // POST /api/resume/analyze -> Matches axios.post(`${API_URL}/resume/analyze`, ...)
+// Note: If your frontend API_URL ends in '/api', this path results in /api/resume/analyze
 app.post('/api/resume/analyze', upload.single('resume'), analyzeResume);
 
 // GET /api/jobs -> Fetch all available jobs for comparison or listing
