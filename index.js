@@ -1,46 +1,35 @@
 import 'dotenv/config.js';
-import express, { json, urlencoded } from 'express';
+import express from 'express';
+import cors from 'cors';
 import resumeRoutes from './src/routes/resumeRoutes.js';
 import { connectDB } from './src/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS middleware
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://aianalyz.netlify.app');
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
-  );
-  res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET,POST,PUT,DELETE,OPTIONS'
-  );
+app.use(cors({
+  origin: 'https://aianalyz.netlify.app',
+  credentials: true,
+}));
 
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-  next();
-});
+app.options('*', cors());
 
-app.use(json());
-app.use(urlencoded({ extended: true }));
-app.use('/api', resumeRoutes);
-
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
-
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong on the server!' });
-});
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 await connectDB();
 
+app.use('/api', resumeRoutes);
+
+app.get('/health', (req, res) => {
+  res.send('OK');
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Server error' });
+});
+
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on ${PORT}`);
 });
