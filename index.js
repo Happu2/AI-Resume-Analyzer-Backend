@@ -1,6 +1,5 @@
 import 'dotenv/config.js'; 
 import express, { json, urlencoded } from 'express';
-import cors from 'cors';
 import resumeRoutes from './src/routes/resumeRoutes.js';
 import { connectDB } from './src/db.js';
 
@@ -19,12 +18,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// Optionally, you can remove the cors() middleware below, or keep it for redundancy
-// app.use(cors({
-//   origin: ['https://aianalyz.netlify.app'],
-//   credentials: true
-// }));
 
 app.use(json());
 app.use(urlencoded({ extended: true }));
