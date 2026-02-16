@@ -8,15 +8,22 @@ if (!process.env.DATABASE_URL) {
 }
 
 console.log("DATABASE_URL is set:", process.env.DATABASE_URL ? "✓" : "✗");
+if (process.env.DATABASE_URL) {
+  console.log("DATABASE_URL hostname:", new URL(process.env.DATABASE_URL).hostname);
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
+  ssl: {
     rejectUnauthorized: false
-  } : false,
+  },
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
 });
 
 export const connectDB = async () => {
@@ -24,7 +31,7 @@ export const connectDB = async () => {
     await pool.query('SELECT NOW()');
     console.log("PostgreSQL connected");
   } catch (error) {
-    console.error("DB connection failed:", error);
+    console.error("DB connection failed:", error.message);
     process.exit(1);
   }
 };
