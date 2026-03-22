@@ -7,11 +7,6 @@ import db from './src/db.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const JOBS_FILE_PATH = join(__dirname, 'jobs.json');
-
-/**
- * seedDatabase
- * Reads the jobs.json file and populates the Neon "jobs" table.
- */
 async function seedDatabase() {
   console.log('🚀 Starting to seed database...');
 
