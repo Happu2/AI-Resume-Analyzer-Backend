@@ -1,5 +1,5 @@
 import 'dotenv/config.js';
-import db from '../db.js'; // Correct relative path from controllers/ to src/
+import db from '../db.js'; 
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { unlinkSync, readFileSync } from 'fs';
 import { extname } from 'path';
