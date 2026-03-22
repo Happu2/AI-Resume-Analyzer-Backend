@@ -28,14 +28,6 @@ const options = {
 
 
 async function fetchAndSaveJobs() {
-
-  if (!RAPIDAPI_KEY || RAPIDAPI_KEY === 'YOUR_RAPIDAPI_KEY_GOES_HERE') {
-    console.error('\n❌ ERROR: RapidAPI Key is missing or invalid in fetchJobs.js.\n');
-    return;
-  }
-
-  console.log(`🔍 Attempting to fetch jobs for query: "${SEARCH_QUERY}"...`);
-
   try {
     const response = await axios.request(options); 
     const jobs = response.data.data;
