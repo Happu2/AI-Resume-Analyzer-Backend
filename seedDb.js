@@ -70,8 +70,6 @@ async function seedDatabase() {
     }
   }
 }
-
-// Execute and ensure the pool is closed gracefully
 seedDatabase()
   .then(async () => {
     console.log('🏁 Seed process finished.');
