@@ -50,8 +50,6 @@ async function fetchAndSaveJobs() {
         console.log('⚠️ Jobs were found, but none had the required title, company, and description fields.');
         return;
     }
-
-    // Save processed jobs to local file
     writeFileSync(OUTPUT_FILE, JSON.stringify(formattedJobs, null, 2));
 
     console.log(`\n✅ SUCCESS: Saved ${formattedJobs.length} jobs to ${OUTPUT_FILE}`);
