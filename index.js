@@ -10,8 +10,6 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.set('trust proxy', 1);
-
-// Configure Multer for file uploads (storing in /tmp)
 const upload = multer({ dest: '/tmp/' });
 
 
