@@ -28,7 +28,7 @@ const generationConfig = {
 };
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-preview-09-2025",
+  model: "gemini-2.5-flash",
   generationConfig,
   safetySettings
 });
