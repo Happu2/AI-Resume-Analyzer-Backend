@@ -4,17 +4,11 @@ import 'dotenv/config.js';
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
 const SEARCH_QUERY = 'Software Developer in India';
-
-/**
- * syncJobs
- * Fetches jobs from RapidAPI and updates the Neon Database directly.
- * No local JSON file required.
- */
 export async function syncJobs() {
   console.log(`[${new Date().toISOString()}] 🔄 Starting Job Sync...`);
 
   if (!RAPIDAPI_KEY) {
-    console.error('❌ Sync Failed: RAPIDAPI_KEY is missing in environment variables.');
+    console.error('Sync Failed: RAPIDAPI_KEY is missing in environment variables.');
     return;
   }
 
@@ -33,11 +27,9 @@ export async function syncJobs() {
     const rawJobs = response.data.data;
 
     if (!rawJobs || rawJobs.length === 0) {
-      console.log('⚠️ No new jobs found from API.');
+      console.log(' No new jobs found from API.');
       return;
     }
-
-    // Clear existing jobs to keep data fresh (or use UPSERT logic if preferred)
     await db.query('TRUNCATE TABLE jobs RESTART IDENTITY');
     
     let count = 0;
@@ -63,7 +55,7 @@ export async function syncJobs() {
       count++;
     }
 
-    console.log(`✅ Sync Complete: ${count} jobs updated in database.`);
+    console.log(`Sync Complete: ${count} jobs updated in database.`);
     return count;
 
   } catch (error) {
