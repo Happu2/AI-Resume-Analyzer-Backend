@@ -8,23 +8,14 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/ge
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "");
 
-/**
- * Model selection: Using Gemini 2.5 Flash Preview.
- * Note: If 'gemini-2.5-flash-preview-09-2025' is blocked by your Render region,
- * you will see the 'User location not supported' error.
- */
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-preview",
+  model: "gemini-2.5-flash",
   generationConfig: { 
     temperature: 0.3, 
     responseMimeType: "application/json" 
   },
 });
 
-/**
- * Helper function for Exponential Backoff retries.
- * Handles 503 (Overloaded) and 429 (Rate Limit).
- */
 async function generateWithRetry(prompt) {
   const delays = [1000, 2000, 4000, 8000];
   let lastError;
@@ -36,7 +27,6 @@ async function generateWithRetry(prompt) {
     } catch (error) {
       lastError = error;
       
-      // If location is blocked, retrying won't help. 
       if (error.message?.includes("location is not supported")) {
         throw new Error("LOCATION_BLOCKED");
       }
@@ -94,7 +84,7 @@ async function getAiAnalysis(resumeText, jobTitle, jobDesc) {
     return JSON.parse(cleanedJson);
   } catch (error) {
     if (error.message === "LOCATION_BLOCKED") {
-      throw error; // Pass it up to the main controller
+      throw error;
     }
     console.error(`Gemini Error for [${jobTitle}]:`, error.message);
     return null;
@@ -111,15 +101,12 @@ export async function analyzeResume(req, res) {
       return res.status(400).json({ error: "Could not read PDF text." });
     }
 
-    // Explicitly limiting to top 15 jobs for analysis performance
     const JOB_MATCH_LIMIT = 15;
     const { rows: jobs } = await db.query('SELECT * FROM jobs LIMIT $1', [JOB_MATCH_LIMIT]);
     
     if (jobs.length === 0) {
       return res.status(200).json({ matchedJobs: [] });
     }
-
-    console.log(`Analyzing resume against ${jobs.length} jobs using Gemini 2.5 Flash...`);
 
     const analysisPromises = jobs.map(job => 
       getAiAnalysis(resumeText, job.title, job.description)
